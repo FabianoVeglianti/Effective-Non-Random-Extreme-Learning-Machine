@@ -3,7 +3,8 @@ import scipy
 from sklearn.model_selection import train_test_split
 
 def sortedeigh(matrix, subset_by_value = None):
-  D,U = scipy.linalg.eigh(matrix, subset_by_value=subset_by_value)
+  #D,U = scipy.linalg.eigh(matrix, subset_by_value=subset_by_value)
+  D, U = np.linalg.eigh(matrix)
   sortedIndices = np.argsort(D)[::-1]
   sortedD = D[sortedIndices]
   sortedU = U[:, sortedIndices]

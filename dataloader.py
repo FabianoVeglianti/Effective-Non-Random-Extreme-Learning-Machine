@@ -175,13 +175,8 @@ def load_bank():
 
 
 if __name__ == "__main__":
-    data = pd.read_csv(DATA_PATH + '/abalone/abalone.data', header=None)
-    print(data.head())
-    y = data[8].values.astype(float)
-    dummies0 = pd.get_dummies(data[0], prefix='Sex')
-    X = pd.concat([
-        dummies0,
-        data[range(1,8)]
-    ], axis=1).values.astype(float)
-    print(y[0:4])
-    print(X[0:4, :])
+    X,y = load_servo()
+    print("No. of samples: " + str(X.shape[0]))
+    print("No. of features: " + str(X.shape[1]))
+    print("Min. value y: " + str(np.min(y)))
+    print("Max. value y: " + str(np.max(y)))

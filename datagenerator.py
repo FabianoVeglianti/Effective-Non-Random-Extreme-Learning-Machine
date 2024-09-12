@@ -1,12 +1,7 @@
-from sklearn.datasets import (make_friedman1,
-                              make_friedman2,
-                              make_friedman3)
-
-from sklearn.preprocessing import PolynomialFeatures
-
 import numpy as np
+import pandas as pd
+import os
 
-from functools import partial
 
 
 class DataGenerator:
@@ -59,150 +54,218 @@ class LoaderDataGenerator(DataGenerator):
                 'data': (X, y.reshape(-1, 1))}
 
 
-class Friedman1Generator(DataGenerator):
+class SyntheticData(DataGenerator):
+    idx = 0
 
-    def __init__(self, T, n0, noise=0.1):
+    def __init__(self, T, n0, X_distribution, X_range, X_cov, X_rho, y_function, y_neurons, y_SNR):
         self.T = T
         self.n0 = n0
-        self.noise = noise
-        self.name = f'friedman_1_dim_{self.n0}'
+        self.X_distribution = X_distribution
+        self.X_range = X_range
+        self.X_cov = X_cov
+        self.X_rho = X_rho
+        self.y_function = y_function
+        self.y_neurons = y_neurons
+        self.y_SNR = y_SNR
+        SyntheticData.idx = SyntheticData.idx + 1
+        self.name = str(SyntheticData.idx)
 
     def dataset_name(self):
         return self.name
-
-    def generate(self):
-        X, y = make_friedman1(n_samples = self.T, n_features = self.n0, noise = self.noise)
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
-
-
-class Friedman2Generator(DataGenerator):
-
-    def __init__(self, T, noise=0.1):
-        self.T = T
-        self.noise = noise
-        self.name = 'friedman_2'
-
-    def dataset_name(self):
-        return self.name
-
-    def generate(self):
-        X, y = make_friedman2(n_samples = self.T, noise = self.noise)
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
-
-
-class Friedman3Generator(DataGenerator):
-
-    def __init__(self, T, noise=0.1):
-        self.T = T
-        self.noise = noise
-        self.name = 'friedman_3'
-
-    def dataset_name(self):
-        return self.name
-
-    def generate(self):
-        X, y = make_friedman3(n_samples = self.T, noise = self.noise)
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
-
-
-class FunctionRegressionGenerator(DataGenerator):
-    def __init__(self, T, name, func, low_bound=-2 * np.pi, high_bound=2 * np.pi,
-                 noise=0.1):
-        self.T = T
-        self.function = func
-        self.low = low_bound
-        self.high = high_bound
-        self.noise = noise
-        self.name = name
-
-    def dataset_name(self):
-        return self.name
-
-    def generate(self):
-        X = np.random.uniform(self.low, self.high, self.T)
-        if len(X.shape) == 1:
-            X = X.reshape(-1, 1)
-        y = self.function(X) + np.random.normal(0, self.noise, (self.T, 1))
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
-
-
-SinGenerator = partial(FunctionRegressionGenerator, name='sin', func=np.sin)
-CosGenerator = partial(FunctionRegressionGenerator, name='cos', func=np.cos)
-
-SinCGenerator = partial(FunctionRegressionGenerator, name='sinC',
-                        func=lambda x: np.sin(x) / x)
-
-
-class LinearGenerator(DataGenerator):
-    def __init__(self, T, n0, low_bound=-2 * np.pi, high_bound=2 * np.pi,
-                 noise=0.1):
-        self.T = T
-        self.n0 = n0
-        self.low = low_bound
-        self.high = high_bound
-        self.noise = noise
-        self.name = f"linear_dim_{self.n0}"
-
-    def dataset_name(self):
-        return self.name
-
-    def generate(self):
-        X = np.random.uniform(self.low, self.high, (self.T, self.n0))
-
-        coeffs = np.random.uniform(-5, 5, (self.n0, 1))
-        coeffs = coeffs / coeffs.sum()
-        bias = np.random.uniform(-5, 5)
-        y = X @ coeffs + bias + np.random.normal(0, self.noise, (self.T, 1))
-
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
-
-
-class QuadraticGenerator(DataGenerator):
-    def __init__(self, T, n0, low_bound=-2 * np.pi, high_bound=2 * np.pi,
-                 noise=0.1):
-        self.T = T
-        self.n0 = n0
-        self.low = low_bound
-        self.high = high_bound
-        self.noise = noise
-        self.name = f"quadratic_dim_{self.n0}"
-
-    def dataset_name(self):
-        return self.name
-
-    def generate(self):
-        X = np.random.uniform(self.low, self.high, (self.T, self.n0))
-        Xf = PolynomialFeatures(degree=2).fit_transform(X)
-
-        coeffs = np.random.uniform(-5, 5, (Xf.shape[1], 1))
-        coeffs = coeffs / coeffs.sum()
-        bias = np.random.uniform(-5, 5)
-        y = Xf @ coeffs + bias + np.random.normal(0, self.noise, (self.T, 1))
-
-        return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
     
-#class Shallow(DataGenerator): # somma di sigmoid
+    def generate(self):
+        if X_distribution == "uniform":
+            X = np.random.uniform(X_range[0], X_range[1], (T, n0))
+        elif X_distribution == "gaussian":
+            if X_cov == "toeplix":
+                cov_matrix = np.fromfunction(
+                        lambda i, j: X_rho ** np.abs(i - j), 
+                        (n0, n0), 
+                        dtype=int
+                    )
+            elif X_cov == "iid":
+                cov_matrix = np.eye(n0)
+            X = np.random.multivariate_normal(np.zeros(n0), cov_matrix, T)
+        
+        # Generate y
+        if y_function == "linear":
+            weights = np.random.uniform(-2, 2, n0)
+            bias = np.random.uniform(-2, 2)
+            y = X @ weights + bias
+        
+        elif y_function == "shallow":
+            W_1 = np.random.normal(0, 1/np.sqrt(n0), (n0, self.y_neurons))
+            W_2 = np.random.normal(0, 1/np.sqrt(self.y_neurons), (self.y_neurons, 1))
+            y = 1/(1 + np.exp(-(X @ W_1))) @ W_2 #shallow NN with sigmoid activation function
+        
+        
+        # Add noise
+        var_y = np.var(y)
+        var_noise = var_y / y_SNR
+        noise = np.random.normal(0, np.sqrt(var_noise), y.shape)
+        y += noise
 
-# Neurone
+        return X, y
 
-# Radial
-
-# 
-
-#Modificare anziché assegnare noise, stabilisco il SNR (1,4,10)
-    
 if __name__ == "__main__":
-    T = 5
-    n0 = 2
-    noise = 0
-    linearGenerator = LinearGenerator(T, n0, noise = noise)
-    res = linearGenerator.generate()
-    print(res['name'])
-    data = res['data']
-    print(data)
+
+    T = 300
+    n0_list = [30,100]
+    X_distribution_list = ["uniform", "gaussian"]
+    X_range_list = [[-2 * np.pi, 2 * np.pi]]
+    X_cov_list = ["toeplix", "iid"]
+    X_rho_list = [0.8]
+    y_function_list = ["linear", "shallow"]
+    #y_neurons_list = [1, 10, 100]
+    y_neurons_list = [100]
+    y_SNR_list = [2, 10]
+
+    datasets = {}
+    index = 1
+    for n0 in n0_list:
+        for X_distribution in X_distribution_list:
+            if X_distribution == "uniform":
+                for X_range in X_range_list:
+                    for y_function in y_function_list:
+                        if y_function == "linear":
+                            for y_SNR in y_SNR_list:
+                                syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, None, y_SNR)
+                                X, y = syntheticDataGenerator.generate()
+                                datasets[index] = {'X': X,
+                                                    'y':y,
+                                                    'n0': n0,
+                                                    'X_distribution': X_distribution,
+                                                    'X_range': X_range,
+                                                    'X_cov': "//",
+                                                    'X_rho': "//",
+                                                    'y_function': y_function,
+                                                    'y_neurons': "//",
+                                                    'y_SNR': y_SNR}
+                                index = index + 1
+                        elif y_function == "shallow":
+                            for y_neurons in y_neurons_list:
+                                for y_SNR in y_SNR_list:
+                                    syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, y_neurons, y_SNR)
+                                    X, y = syntheticDataGenerator.generate()
+                                    datasets[index] = {'X': X,
+                                            'y':y,
+                                            'n0': n0,
+                                            'X_distribution': X_distribution,
+                                            'X_range': X_range,
+                                            'X_cov': "//",
+                                            'X_rho': "//",
+                                            'y_function': y_function,
+                                            'y_neurons': y_neurons,
+                                            'y_SNR': y_SNR}
+                                    index = index + 1
+            elif X_distribution == "gaussian":
+                for X_cov in X_cov_list:
+                    if X_cov == "iid":
+                        for X_range in X_range_list:
+                            for y_function in y_function_list:
+                                if y_function == "linear":
+                                    for y_SNR in y_SNR_list:
+                                        syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, None, y_SNR)
+                                        X, y = syntheticDataGenerator.generate()
+                                        datasets[index] = {'X': X,
+                                            'y':y,
+                                            'n0': n0,
+                                            'X_distribution': X_distribution,
+                                            'X_range': "//",
+                                            'X_cov': X_cov,
+                                            'X_rho': "//",
+                                            'y_function': y_function,
+                                            'y_neurons': "//",
+                                            'y_SNR': y_SNR}
+                                        index = index + 1
+                                elif y_function == "shallow":
+                                    for y_neurons in y_neurons_list:
+                                        for y_SNR in y_SNR_list:
+                                            syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, y_neurons, y_SNR)
+                                            X, y = syntheticDataGenerator.generate()
+                                            datasets[index] = {'X': X,
+                                                'y':y,
+                                                'n0': n0,
+                                                'X_distribution': X_distribution,
+                                                'X_range': "//",
+                                                'X_cov': X_cov,
+                                                'X_rho': "//",
+                                                'y_function': y_function,
+                                                'y_neurons': y_neurons,
+                                                'y_SNR': y_SNR}
+                                            index = index + 1
+                    elif X_cov == "toeplix":
+                        for X_rho in X_rho_list:
+                            for X_range in X_range_list:
+                                for y_function in y_function_list:
+                                    if y_function == "linear" or y_function == "quadratic":
+                                        for y_SNR in y_SNR_list:
+                                            syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, None, y_SNR)
+                                            X, y = syntheticDataGenerator.generate()
+                                            datasets[index] = {'X': X,
+                                                'y':y,
+                                                'n0': n0,
+                                                'X_distribution': X_distribution,
+                                                'X_range': "//",
+                                                'X_cov': X_cov,
+                                                'X_rho': X_rho,
+                                                'y_function': y_function,
+                                                'y_neurons': "//",
+                                                'y_SNR': y_SNR}
+                                            index = index + 1
+                                    elif y_function == "shallow":
+                                        for y_neurons in y_neurons_list:
+                                            for y_SNR in y_SNR_list:
+                                                syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, y_neurons, y_SNR)
+                                                X, y = syntheticDataGenerator.generate()
+                                                datasets[index] = {'X': X,
+                                                    'y':y,
+                                                    'n0': n0,
+                                                    'X_distribution': X_distribution,
+                                                    'X_range': "//",
+                                                    'X_cov': X_cov,
+                                                    'X_rho': X_rho,
+                                                    'y_function': y_function,
+                                                    'y_neurons': y_neurons,
+                                                    'y_SNR': y_SNR}
+                                                index = index + 1
+    # Create a directory to save the dataset files
+    os.makedirs('datasets/synthetic', exist_ok=True)
+
+    # Initialize an empty list to hold the summary table data
+    synthetic_datasets_description_data = []
+
+    for idx, data in datasets.items():
+        # Extract X and y from the dataset
+        X = data['X']
+        y = data['y']
+        
+        # Concatenate X and y to form the dataset to be saved
+        dataset = np.column_stack((X, y))
+        
+        # Generate the file name
+        file_name = f'dataset_{idx}.csv'
+        
+        # Save the dataset to a .csv file
+        np.savetxt(os.path.join('datasets/synthetic', file_name), dataset, delimiter=',', fmt='%.6f')
+        
+        # Append the summary information to the summary table data
+        synthetic_datasets_description_data.append([
+            idx,
+            data['n0'],
+            data['X_distribution'],
+            data['X_range'],
+            data['X_cov'],
+            data['X_rho'],
+            data['y_function'],
+            data['y_neurons'],
+            data['y_SNR']
+        ])
+
+    # Create a DataFrame for the summary table
+    summary_df = pd.DataFrame(synthetic_datasets_description_data, columns=[
+        'index', 'n0', 'X_distribution', 'X_range', 'X_cov', 'X_rho', 'y_function', 'y_neurons', 'y_SNR'
+    ])
+
+    # Save the summary table to a .csv file
+    summary_df.to_csv('synthetic_datasets_description.csv', index=False, sep=";")
