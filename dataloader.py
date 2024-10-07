@@ -175,7 +175,7 @@ def load_bank():
 
 
 if __name__ == "__main__":
-    X,y = load_servo()
+    X,y = load_california_housing()
     print("No. of samples: " + str(X.shape[0]))
     print("No. of features: " + str(X.shape[1]))
     print("Min. value y: " + str(np.min(y)))
