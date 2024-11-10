@@ -109,11 +109,11 @@ class SyntheticData(DataGenerator):
 
 if __name__ == "__main__":
 
-    T_list = [300,10000]
-    n0_list = [30,100]
+    T_list = [300,1200]
+    n0_list = [20,80]
     X_distribution_list = ["uniform", "gaussian"]
     X_range_list = [[-2 * np.pi, 2 * np.pi]]
-    X_cov_list = ["toeplix", "iid"]
+    X_cov_list = ["iid", "toeplix"]
     X_rho_list = [0.8]
     y_function_list = ["linear", "shallow"]
     #y_neurons_list = [1, 10, 100]
@@ -124,10 +124,10 @@ if __name__ == "__main__":
     index = 1
     for T in T_list:
         for n0 in n0_list:
-            for X_distribution in X_distribution_list:
-                if X_distribution == "uniform":
-                    for X_range in X_range_list:
-                        for y_function in y_function_list:
+            for y_function in y_function_list:
+                for X_distribution in X_distribution_list:
+                    if X_distribution == "uniform":
+                        for X_range in X_range_list:
                             if y_function == "linear":
                                 for y_SNR in y_SNR_list:
                                     syntheticDataGenerator = SyntheticData(T, n0, X_distribution, X_range, None, None, y_function, None, y_SNR)
@@ -161,11 +161,10 @@ if __name__ == "__main__":
                                                 'y_neurons': y_neurons,
                                                 'y_SNR': y_SNR}
                                         index = index + 1
-                elif X_distribution == "gaussian":
-                    for X_cov in X_cov_list:
-                        if X_cov == "iid":
-                            for X_range in X_range_list:
-                                for y_function in y_function_list:
+                    elif X_distribution == "gaussian":
+                        for X_cov in X_cov_list:
+                            if X_cov == "iid":
+                                for X_range in X_range_list:
                                     if y_function == "linear":
                                         for y_SNR in y_SNR_list:
                                             syntheticDataGenerator = SyntheticData(T, n0, X_distribution, None, X_cov, None, y_function, None, y_SNR)
@@ -199,10 +198,9 @@ if __name__ == "__main__":
                                                     'y_neurons': y_neurons,
                                                     'y_SNR': y_SNR}
                                                 index = index + 1
-                        elif X_cov == "toeplix":
-                            for X_rho in X_rho_list:
-                                for X_range in X_range_list:
-                                    for y_function in y_function_list:
+                            elif X_cov == "toeplix":
+                                for X_rho in X_rho_list:
+                                    for X_range in X_range_list:
                                         if y_function == "linear" or y_function == "quadratic":
                                             for y_SNR in y_SNR_list:
                                                 syntheticDataGenerator = SyntheticData(T, n0, X_distribution, None, X_cov, X_rho, y_function, None, y_SNR)

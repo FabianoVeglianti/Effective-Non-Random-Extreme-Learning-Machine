@@ -43,10 +43,12 @@ def ELM(n, seed, X, y, test = None):
         } 
     return W, beta, data
     
-def score_orthogonal_directions(W, beta, X, y):
+def score_orthogonal_directions(W, beta, X, y, center_factor = None):
     Z = X @ W
 
     S = scipy.special.erf(Z)
+    if center_factor is not None:
+        S = S - center_factor
 
     weighted_S = S * beta.reshape(1,-1)
     y_hats = np.cumsum(weighted_S, axis=1) #compute y_hat for each n without using for loop
@@ -63,20 +65,14 @@ def score(W, beta, X, y):
     err = func_standardized_rmse(y, y_hat)
     return err
 
-def incremental_ENRELM(X, y, threshold, test = None):
+def incremental_ENRELM(X, y, epsilon, threshold, test = None):
     hidden_space_dim = int(np.minimum(50 * X.shape[1], round(X.shape[0] * 0.5)))
     training_error = np.zeros(hidden_space_dim+1)
-
-    test_is_not_None = test is not None
-    if test_is_not_None:
-        X_test = test['X']
-        y_test = test['y']
-        test_error = np.zeros(hidden_space_dim+1)
 
 
     timing = time.time_ns()
     K = gen_K(X.T, X.T)
-    L,U = utils.sortedeigh(K, None)
+    L,U = utils.sortedeigh(K)
 
     W = np.linalg.inv(X.T @ X) @ X.T @ scipy.special.erfinv(U)    
     S = scipy.special.erf(X @ W)
@@ -90,16 +86,10 @@ def incremental_ENRELM(X, y, threshold, test = None):
     r = y - y_hat 
     training_error[0] = func_standardized_rmse(y, y_hat)
 
-    if test_is_not_None:
-        y_test_hat = np.ones((X_test.shape[0],1)) * np.mean(y)
-        test_error[0] = func_standardized_rmse(y_test, y_test_hat)
-        S_test = scipy.special.erf(X_test @ W)
-        S_test_ = S_test - mean_S
 
 
     #score_inf[num_eigenvec_used_inf] = train_error_inf[num_eigenvec_used_inf] + (num_eigenvec_used_inf * np.log(Tr)) * (train_error_inf[0] / Tr / np.log(Tr))
     #beta = np.zeros()
-    epsilon = 1 / np.sqrt(y.shape[0])
     dim_insert = []
     num_dim = 0
     iteration = 0
@@ -122,9 +112,6 @@ def incremental_ENRELM(X, y, threshold, test = None):
         r = r - epsilon * dotprod[l] / (np.linalg.norm(S_[:, l:l+1]))**2 * S_[:, l:l+1]
         training_error[num_dim] = func_standardized_rmse(y, y_hat)
 
-        if test_is_not_None:
-            y_test_hat = y_test_hat + epsilon * dotprod[l] / (np.linalg.norm(S_[:, l:l+1]))**2 * S_test_[:, l:l+1] 
-            test_error[num_dim] = func_standardized_rmse(y_test, y_test_hat)
 
         if (old_training_error - training_error[num_dim] < threshold):
             break
@@ -132,7 +119,21 @@ def incremental_ENRELM(X, y, threshold, test = None):
     timing = (time.time_ns() - timing) / 1e6
 
     data = None
-    if test_is_not_None:
+
+    if test is not None:
+        X_test = test['X']
+        y_test = test['y']
+        test_error = np.zeros(len(dim_insert)+1)
+        
+
+        W = W[:, dim_insert]
+        beta_incremental = beta_incremental[dim_insert]
+        y_test_hat = np.ones((X_test.shape[0],1)) * np.mean(y)
+        test_error[0] = func_standardized_rmse(y_test, y_test_hat)
+        test_error[1:] = score_orthogonal_directions(W, beta_incremental, X_test, y_test, center_factor=mean_S[dim_insert])
+        training_error = training_error[training_error!= 0]
+        training_error[1:] = score_orthogonal_directions(W, beta_incremental, X, y, center_factor=mean_S[dim_insert])
+
         data = {
             'training_error' : training_error,
             'test_error' : test_error, 
