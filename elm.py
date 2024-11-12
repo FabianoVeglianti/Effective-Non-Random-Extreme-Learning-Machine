@@ -10,7 +10,7 @@ import time
 
 def ELM(n, seed, X, y, test = None):
 
-    n0 = X.shape[1] 
+    n0 = X.shape[0] 
     if seed == -1:
         seed = int(time.time_ns() % 1000000)
     np.random.seed = seed
@@ -18,10 +18,10 @@ def ELM(n, seed, X, y, test = None):
 #    self.n = n
     timing = time.time_ns()
     
-    W = np.random.normal(0, 1/n0, size=(n0, n))
-
-    Z = X @ W
-
+    W = np.random.normal(0, 1/n0, size=(n, n0))
+    
+    Z = (W @ X).T
+    assert(Z.shape==(X.shape[1], n))
     S = scipy.special.erf(Z)
     
     beta = np.linalg.inv(S.T @ S) @ S.T @ y
@@ -44,7 +44,7 @@ def ELM(n, seed, X, y, test = None):
     return W, beta, data
     
 def score_orthogonal_directions(W, beta, X, y, center_factor = None):
-    Z = X @ W
+    Z = (W @ X).T 
 
     S = scipy.special.erf(Z)
     if center_factor is not None:
@@ -57,7 +57,7 @@ def score_orthogonal_directions(W, beta, X, y, center_factor = None):
     return err
 
 def score(W, beta, X, y):
-    Z = X @ W
+    Z = (W @ X).T 
 
     S = scipy.special.erf(Z)
 
@@ -66,22 +66,22 @@ def score(W, beta, X, y):
     return err
 
 def incremental_ENRELM(X, y, epsilon, threshold, test = None):
-    hidden_space_dim = int(np.minimum(50 * X.shape[1], round(X.shape[0] * 0.5)))
+    hidden_space_dim = int(np.minimum(50 * X.shape[0], round(X.shape[1] * 0.5)))
     training_error = np.zeros(hidden_space_dim+1)
 
 
     timing = time.time_ns()
-    K = gen_K(X.T, X.T)
-    L,U = utils.sortedeigh(K)
+    K = gen_K(X, X)
+    _,U = utils.sortedeigh(K)
 
-    W = np.linalg.inv(X.T @ X) @ X.T @ scipy.special.erfinv(U)    
-    S = scipy.special.erf(X @ W)
+    W = scipy.special.erfinv(U.T) @ X.T @ np.linalg.inv(X @ X.T)
+    S = scipy.special.erf((W @ X).T)
 
     mean_S = np.mean(S, axis = 0)
     
     S_ = S - mean_S
 
-    y_hat = np.ones((X.shape[0],1)) * np.mean(y)
+    y_hat = np.ones((X.shape[1],1)) * np.mean(y)
 
     r = y - y_hat 
     training_error[0] = func_standardized_rmse(y, y_hat)
@@ -126,9 +126,9 @@ def incremental_ENRELM(X, y, epsilon, threshold, test = None):
         test_error = np.zeros(len(dim_insert)+1)
         
 
-        W = W[:, dim_insert]
+        W = W[dim_insert, :]
         beta_incremental = beta_incremental[dim_insert]
-        y_test_hat = np.ones((X_test.shape[0],1)) * np.mean(y)
+        y_test_hat = np.ones((X_test.shape[1],1)) * np.mean(y)
         test_error[0] = func_standardized_rmse(y_test, y_test_hat)
         test_error[1:] = score_orthogonal_directions(W, beta_incremental, X_test, y_test, center_factor=mean_S[dim_insert])
         training_error = training_error[training_error!= 0]
@@ -144,9 +144,10 @@ def incremental_ENRELM(X, y, epsilon, threshold, test = None):
 
 
 
-def approximated_ENRELM(X, y, sort_by_correlation, threshold, test = None):
+def approximated_ENRELM(X, y, sort_by_correlation, test = None):
+        max_n = int(np.minimum(50 * X.shape[0], round(X.shape[1] * 0.5)))
         timing = time.time_ns()
-        K = gen_K(X.T, X.T)
+        K = gen_K(X, X)
 
         L,U_unsorted = utils.sortedeigh(K)
 
@@ -154,14 +155,12 @@ def approximated_ENRELM(X, y, sort_by_correlation, threshold, test = None):
             correlations = np.abs(U_unsorted.T @ y).flatten()
             sorted_indices = np.argsort(correlations)[::-1]
             U = U_unsorted[:, sorted_indices]
-        else:
-            idx = np.searchsorted(np.cumsum(L) / L.sum(), threshold)  
-            U = U_unsorted[:,0:idx]
+        else:  
+            U = U_unsorted
 
-
-        W = np.linalg.inv(X.T @ X) @ X.T @ scipy.special.erfinv(U)      # TODO change if erf is not used
+        W = scipy.special.erfinv((U[:, 0:max_n]).T) @ X.T @ np.linalg.inv(X @ X.T)
     
-        beta = U.T @ y
+        beta = (U[:, 0:max_n]).T @ y
         
         #weighted_U = U * beta.reshape(1,-1)
         #y_hats = np.cumsum(weighted_U, axis=1) #compute y_hat for each n without using for loop
@@ -183,35 +182,6 @@ def approximated_ENRELM(X, y, sort_by_correlation, threshold, test = None):
             }   
         return W, beta, data
 
-
-def ENRELM(X, y, sort_by_correlation, threshold, max_dim):
-    K = gen_K(X.T, X.T)
-
-    L,U_unsorted = utils.sortedeigh(K)
-
-    if sort_by_correlation:
-        correlations = np.abs(U_unsorted.T @ y).flatten()
-        sorted_indices = np.argsort(correlations)[::-1]
-        U = U_unsorted[:, sorted_indices]
-    else:
-        idx = np.searchsorted(np.cumsum(L) / L.sum(), threshold)  
-        U = U_unsorted[:,0:idx]
-
-
-    W = np.linalg.inv(X.T @ X) @ X.T @ scipy.special.erfinv(U)      # TODO change if erf is not used
-
-    beta = np.zeros((max_dim, max_dim))
-    for j in range(max_dim):
-        S = scipy.special.erf(X @ W[:,0:j+1])
-        beta[0:j+1,j:j+1] = np.linalg.inv(S.T @ S) @ S.T @ y
-    
-    #weighted_U = U * beta.reshape(1,-1)
-    #y_hats = np.cumsum(weighted_U, axis=1) #compute y_hat for each n without using for loop
-
-
-    #err = np.sqrt(np.sum((y.reshape(-1,1) - y_hats)**2, axis = 0)) / np.sqrt(np.sum((y)**2))
-
-    return W, beta#, err
 
 def gen_K(A,B):
         normA = np.sqrt(np.sum(A**2,axis=0))

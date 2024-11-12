@@ -34,7 +34,7 @@ class DataGenerator:
             cov = self.generate_full(self.n0)
         if method =="iid":
             cov = np.eye(self.n0)
-        X = np.random.multivariate_normal(0, cov, size = self.T)
+        X = np.random.multivariate_normal(0, cov, size = self.T).T
         return X
 
 
@@ -51,7 +51,7 @@ class LoaderDataGenerator(DataGenerator):
     def generate(self):
         X, y = self.loader_fn()
         return {'name': self.name,
-                'data': (X, y.reshape(-1, 1))}
+                'data': (X, y.reshape(1, -1))}
 
 
 class SyntheticData(DataGenerator):
@@ -75,7 +75,7 @@ class SyntheticData(DataGenerator):
     
     def generate(self):
         if self.X_distribution == "uniform":
-            X = np.random.uniform(self.X_range[0], self.X_range[1], (self.T, self.n0))
+            X = np.random.uniform(self.X_range[0], self.X_range[1], (self.T, self.n0)).T
         elif self.X_distribution == "gaussian":
             if self.X_cov == "toeplix":
                 cov_matrix = np.fromfunction(
@@ -85,18 +85,18 @@ class SyntheticData(DataGenerator):
                     )
             elif self.X_cov == "iid":
                 cov_matrix = np.eye(n0)
-            X = np.random.multivariate_normal(np.zeros(self.n0), cov_matrix, self.T)
+            X = np.random.multivariate_normal(np.zeros(self.n0), cov_matrix, self.T).T
         
         # Generate y
         if self.y_function == "linear":
-            weights = np.random.uniform(-2, 2, self.n0)
+            weights = np.random.uniform(-2, 2, (1,self.n0))
             bias = np.random.uniform(-2, 2)
-            y = X @ weights + bias
+            y = weights @ X + bias
         
         elif self.y_function == "shallow":
-            W_1 = np.random.normal(0, 1/np.sqrt(self.n0), (self.n0, self.y_neurons))
-            W_2 = np.random.normal(0, 1/np.sqrt(self.y_neurons), (self.y_neurons, 1))
-            y = 1/(1 + np.exp(-(X @ W_1))) @ W_2 #shallow NN with sigmoid activation function
+            W_1 = np.random.normal(0, 1/np.sqrt(self.n0), (self.y_neurons, self.n0))
+            W_2 = np.random.normal(0, 1/np.sqrt(self.y_neurons), (1, self.y_neurons))
+            y = W_2 @ (1/(1 + np.exp(-(W_1 @ X)))) #shallow NN with sigmoid activation function
         
         
         # Add noise
@@ -244,9 +244,9 @@ if __name__ == "__main__":
         # Extract X and y from the dataset
         X = data['X']
         y = data['y']
-        
+
         # Concatenate X and y to form the dataset to be saved
-        dataset = np.column_stack((X, y))
+        dataset = np.row_stack((X, y))
         
         # Generate the file name
         file_name = f'dataset_{idx}.csv'
