@@ -32,7 +32,7 @@ Before running the code, download the real datasets and place them in a folder n
 Download the datasets from the following links and organize them accordingly:
 
 - **Abalone** - [Download Link](https://archive.ics.uci.edu/dataset/1/abalone)
-- **Auto MPG** - [Download Link](https://archive.ics.uci.edu/dataset/9/auto+mpg)
+- **Auto MPG** - [Download Link](https://www.dcc.fc.up.pt/~ltorgo/Regression/autompg.html)
 - **California Housing** - [Download Link](https://www.dcc.fc.up.pt/~ltorgo/Regression/cal_housing.html)
 - **Delta Ailerons** - [Download Link](https://www.dcc.fc.up.pt/~ltorgo/Regression/delta_ailerons.html)
 - **LA Ozone** - [Download Link](https://hastie.su.domains/ElemStatLearn/datasets/LAozone.data) (Save as `datasets/LAozone/LAozone.data.txt`)
