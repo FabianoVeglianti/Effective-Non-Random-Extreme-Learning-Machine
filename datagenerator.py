@@ -235,7 +235,8 @@ if __name__ == "__main__":
                                                         'y_SNR': y_SNR}
                                                     index = index + 1
     # Create a directory to save the dataset files
-    os.makedirs('datasets/synthetic', exist_ok=True)
+    folder_path = os.path.join("datasets", "synthetic")
+    os.makedirs(folder_path, exist_ok=True)
 
     # Initialize an empty list to hold the summary table data
     synthetic_datasets_description_data = []
@@ -252,7 +253,8 @@ if __name__ == "__main__":
         file_name = f'dataset_{idx}.csv'
         
         # Save the dataset to a .csv file
-        np.savetxt(os.path.join('datasets/synthetic', file_name), dataset, delimiter=',', fmt='%.6f')
+        folder_path = os.path.join("datasets", "synthetic")
+        np.savetxt(os.path.join(folder_path, file_name), dataset, delimiter=',', fmt='%.6f')
         
         # Append the summary information to the summary table data
         synthetic_datasets_description_data.append([

@@ -6,10 +6,10 @@ from ucimlrepo import fetch_ucirepo
 # The following dataset are downloaded from https://archive.ics.uci.edu/datasets
 
 
-DATA_PATH = DATA_PATH = os.path.dirname(os.path.abspath(__file__)) + '/datasets'
+DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datasets')
 
 def load_student():
-    data = pd.read_csv(DATA_PATH + '/student/Student/student-mat.csv',delimiter=";", header=None)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'student', 'Student', 'student-mat.csv'), delimiter=";", header=None)
     y = data[32].values
     X = data[range(0, 30)]
 
@@ -68,7 +68,7 @@ def load_student():
     return X,y
 
 def load_abalone():
-    data = pd.read_csv(DATA_PATH + '/abalone/abalone.data', header=None)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'abalone', 'abalone.data'), header=None)
     y = data[8].values.astype(float)
     dummies0 = pd.get_dummies(data[0], prefix='Sex')
     X = pd.concat([
@@ -78,7 +78,7 @@ def load_abalone():
     return X,y
 
 def load_intrusion_wsns():
-    data = pd.read_csv(DATA_PATH + '/intrusion_wsns/Intrusion_Wsns/intrusion_wsns.csv', header=0)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'intrusion_wsns', 'Intrusion_Wsns', 'intrusion_wsns.csv'), header=0)
     columns = data.columns
     y = data[columns[4]].values.astype(float)
     dummies0 = pd.get_dummies(data[columns[0]], prefix='Area')
@@ -89,7 +89,7 @@ def load_intrusion_wsns():
     return X,y
 
 def load_forest_fires():
-    data = pd.read_csv(DATA_PATH + '/forest_fires/Forest_Fires/forest_fires.csv', header=0)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'forest_fires', 'Forest_Fires', 'forest_fires.csv'), header=0)
     columns = data.columns
     y = data[columns[12]].values.astype(float)
     X = data[columns[range(0, 12)]]
@@ -106,7 +106,7 @@ def load_forest_fires():
     return X,y
 
 def load_prostate():
-    data = pd.read_csv(DATA_PATH + '/prostate/prostate.data.txt', delimiter='\t', header=0)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'prostate', 'prostate.data.txt'), delimiter='\t', header=0)
     data.drop(labels=[data.columns[0], data.columns[10]], inplace=True, axis=1)
     y = data[data.columns[8]].values.astype(float)
     X = data[data.columns[range(0,8)]].values.astype(float)
@@ -114,14 +114,14 @@ def load_prostate():
 
 
 def load_LAozone():
-    data = pd.read_csv(DATA_PATH + '/LAozone/LAozone.data.txt', header=0)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'LAozone', 'LAozone.data.txt'), header=0)
     y = data[data.columns[0]].values.astype(float)
     X = data[data.columns[range(1,10)]].values.astype(float)
     return X, y
     
 
 def load_servo():
-    data = pd.read_csv(DATA_PATH + '/servo/Servo/servo.data', header=None)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'servo', 'Servo', 'servo.data'), header=None)
     y = data[4].values
     X = data[[0, 1, 2, 3]]
     X = pd.get_dummies(X, columns=[0, 1, 2, 3]).values.astype(np.float32)
@@ -129,28 +129,25 @@ def load_servo():
 
 
 def load_machine_cpu():
-    data = np.genfromtxt(DATA_PATH + '/machine/Machine-Cpu/machine.data',
-                         delimiter=',', dtype=str)
+    data = np.genfromtxt(os.path.join(DATA_PATH, 'machine', 'Machine-Cpu', 'machine.data'), delimiter=',', dtype=str)
     X = data[:, :-1].astype(np.float32)
     y = data[:, -1].astype(np.float32)
     return X, y
 
 def load_california_housing():
-    data = np.genfromtxt(DATA_PATH + '/cal_housing/CaliforniaHousing/cal_housing.data',
-                         delimiter=',', dtype=str)
+    data = np.genfromtxt(os.path.join(DATA_PATH, 'cal_housing', 'CaliforniaHousing', 'cal_housing.data'), delimiter=',', dtype=str)
     X = data[:, :-1].astype(np.float32)
     y = data[:, -1].astype(np.float32) / 100000 #la divisione per 100000 è per avere la stessa y di scikitlearn
     return X, y
 
 def load_delta_ailerons():
-    data = np.genfromtxt(DATA_PATH + '/delta_ailerons/Ailerons/delta_ailerons.data',
-                         dtype=np.float32)
+    data = np.genfromtxt(os.path.join(DATA_PATH, 'delta_ailerons', 'Ailerons', 'delta_ailerons.data'), dtype=np.float32)
     X = data[:, :-1]
     y = data[:, -1]
     return X, y
 
 def load_auto_mpg():
-    data = pd.read_csv(DATA_PATH + '/auto/Auto-Mpg/auto.data', header=None)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'auto', 'Auto-Mpg', 'auto.data'), header=None)
     data = data.apply(lambda col:
                       col.apply(lambda val:
                                 val if val != '?' else None))
@@ -164,10 +161,8 @@ def load_auto_mpg():
     return X, y
 
 def load_bank():
-    tr = np.genfromtxt(DATA_PATH + '/bank8FM/Bank/Bank8FM/bank8FM.data',
-                          dtype=np.float32)
-    te = np.genfromtxt(DATA_PATH + '/bank8FM/Bank/Bank8FM/bank8FM.test',
-                          dtype=np.float32)
+    tr = np.genfromtxt(os.path.join(DATA_PATH, 'bank8FM', 'Bank', 'Bank8FM', 'bank8FM.data'), dtype=np.float32)
+    te = np.genfromtxt(os.path.join(DATA_PATH, 'bank8FM', 'Bank', 'Bank8FM', 'bank8FM.test'), dtype=np.float32)
     data = np.vstack([tr, te])
     X = data[:, :-1]
     y = data[:, -1]

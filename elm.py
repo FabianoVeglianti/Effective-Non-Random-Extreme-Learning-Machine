@@ -3,8 +3,6 @@ import math
 import scipy
 import utils
 from custom_score_module import func_standardized_rmse, neg_standardized_rmse
-import neural_tangents as nt
-from neural_tangents import stax
 import time
 
 

@@ -54,7 +54,7 @@ if __name__ == "__main__":
         7: "Prostate Cancer",
         8: "Servo"
     }
-    folder_path = "results/datasets"
+    folder_path = os.path.join('results', 'datasets')
     df_times = pd.DataFrame(columns=["dataset", "total_timing_ELM", "mean_loop_timing_ELM", "timing_approximated_ENRELM", "timing_incremental_ENRELM"])
 
     for key, value in datasets.items():
@@ -234,7 +234,7 @@ if __name__ == "__main__":
         ax2.set_ylabel('RMSE')
         ax2.grid(True)
 
-    folder_path = "results/images"
+    folder_path = os.path.join('results', 'images')
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, loc='lower center', ncol=2, fontsize=12)
     handles2, labels2 = ax2.get_legend_handles_labels()
