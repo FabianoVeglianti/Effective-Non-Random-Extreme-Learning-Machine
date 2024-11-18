@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import pandas as pd
-from ucimlrepo import fetch_ucirepo 
 
 # The following dataset are downloaded from https://archive.ics.uci.edu/datasets
 
@@ -77,33 +76,6 @@ def load_abalone():
     ], axis=1).values.astype(float)
     return X,y
 
-def load_intrusion_wsns():
-    data = pd.read_csv(os.path.join(DATA_PATH, 'intrusion_wsns', 'Intrusion_Wsns', 'intrusion_wsns.csv'), header=0)
-    columns = data.columns
-    y = data[columns[4]].values.astype(float)
-    dummies0 = pd.get_dummies(data[columns[0]], prefix='Area')
-    X = pd.concat([
-        dummies0,
-        data[columns[range(1,4)]]
-    ], axis=1).values.astype(float)
-    return X,y
-
-def load_forest_fires():
-    data = pd.read_csv(os.path.join(DATA_PATH, 'forest_fires', 'Forest_Fires', 'forest_fires.csv'), header=0)
-    columns = data.columns
-    y = data[columns[12]].values.astype(float)
-    X = data[columns[range(0, 12)]]
-
-    dummies2 = pd.get_dummies(X[columns[2]], prefix='month')         # month
-    dummies3 = pd.get_dummies(X[columns[3]], prefix='day')     # day
-    X = pd.concat([
-        X[columns[range(0,2)]],  # age
-        dummies2,
-        dummies3,
-        X[columns[range(4,12)]]
-    ], axis=1).values.astype(float)
-
-    return X,y
 
 def load_prostate():
     data = pd.read_csv(os.path.join(DATA_PATH, 'prostate', 'prostate.data.txt'), delimiter='\t', header=0)
@@ -121,7 +93,7 @@ def load_LAozone():
     
 
 def load_servo():
-    data = pd.read_csv(os.path.join(DATA_PATH, 'servo', 'Servo', 'servo.data'), header=None)
+    data = pd.read_csv(os.path.join(DATA_PATH, 'servo', 'servo.data'), header=None)
     y = data[4].values
     X = data[[0, 1, 2, 3]]
     X = pd.get_dummies(X, columns=[0, 1, 2, 3]).values.astype(np.float32)

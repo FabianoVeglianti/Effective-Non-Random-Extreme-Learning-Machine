@@ -276,4 +276,7 @@ if __name__ == "__main__":
     ])
 
     # Save the summary table to a .csv file
-    summary_df.to_csv('synthetic_datasets_description.csv', index=False, sep=";")
+    folder_path = 'results'
+    if not os.path.exists(folder_path):
+        os.mkdir(folder_path)  
+    summary_df.to_csv(os.path.join(folder_path, 'synthetic_datasets_description.csv'), index=False, sep=";")
